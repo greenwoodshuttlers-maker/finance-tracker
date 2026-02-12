@@ -1,0 +1,32 @@
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background:#F0F9FF;
+  color:#0F172A;
+}
+
+input,select,button{
+  font-family:inherit;
+  font-size:16px;
+}
+
+/* PREMIUM INPUTS */
+input,select{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid #E2E8F0;
+  background:#FFFFFF;
+  box-sizing:border-box;
+}
+
+/* FIX DARK DROPDOWNS */
+select{
+  background:#FFFFFF !important;
+  color:#0F172A;
+}
+
+/* Buttons */
+button{
+  cursor:pointer;
+}
