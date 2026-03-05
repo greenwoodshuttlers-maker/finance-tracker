@@ -23,6 +23,8 @@ return(
 <Link to="/dashboard" style={{color:"#fff"}}>Dashboard</Link>
 <Link to="/add" style={{color:"#fff"}}>Add Entry</Link>
 <Link to="/transactions" style={{color:"#fff"}}>Transactions</Link>
+<Link to="/cards" style={{color:"#fff"}}>Credit Cards</Link>
+<Link to="/card-dashboard" style={{color:"#fff"}}>Card Dashboard</Link>
 
 <span
  onClick={logout}

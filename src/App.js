@@ -8,44 +8,66 @@ import Dashboard from "./pages/Dashboard";
 import AddTransaction from "./pages/AddTransaction";
 import Transactions from "./pages/Transactions";
 import Navbar from "./components/Navbar";
+import CreditCards from "./pages/CreditCards";
+import CardDashboard from "./pages/CardDashboard";
 
 function App(){
 
+// ---------- AUTH STATE ----------
 const [user,setUser]=useState(null);
 const [loading,setLoading]=useState(true);
 
+
+// ---------- CHECK LOGIN ----------
 useEffect(()=>{
- const unsub=onAuthStateChanged(auth,(u)=>{
+
+ const unsub = onAuthStateChanged(auth,(u)=>{
   setUser(u);
   setLoading(false);
  });
+
  return ()=>unsub();
+
 },[]);
 
+
+// ---------- PREVENT UI FLASH ----------
 if(loading) return <p>Loading...</p>;
 
+
+
 return(
+
 <Router>
 
-{/* Navbar only when logged in */}
+{/* Navbar visible only when logged in */}
 {user && <Navbar/>}
 
 <Routes>
 
-<Route path="/" element={<Login/>}/>
+{/* Root route */}
+<Route path="/" element={user ? <Dashboard/> : <Login/>}/>
 
+{/* Protected routes */}
 {user && (
 <>
 <Route path="/dashboard" element={<Dashboard/>}/>
 <Route path="/add" element={<AddTransaction/>}/>
 <Route path="/transactions" element={<Transactions/>}/>
+<Route path="/cards" element={<CreditCards/>}/>
+<Route path="/card-dashboard" element={<CardDashboard/>}/>
 </>
 )}
+
+{/* Fallback */}
+<Route path="*" element={<Login/>}/>
 
 </Routes>
 
 </Router>
+
 );
+
 }
 
 export default App;

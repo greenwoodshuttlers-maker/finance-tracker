@@ -1,112 +1,169 @@
 import { useEffect, useState } from "react";
 import { db } from "../services/firebaseConfig";
-import { collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { Bar } from "react-chartjs-2";
 import "chart.js/auto";
 
 export default function Dashboard(){
 
-const [transactions,setTransactions]=useState([]);
-const [fromDate,setFromDate]=useState("");
-const [toDate,setToDate]=useState("");
+// ---------- STATE ----------
 
-// Example billing cycles
-const billingCycles={
-  "HDFC Regalia":5,
-  "SBI Cashback":10,
-  "Axis Ace":15
-};
+// Monthly spend
+const [monthlySpend,setMonthlySpend]=useState(0);
 
-// ---------- FETCH ----------
+// Category summary
+const [categoryData,setCategoryData]=useState({});
 
+// Credit card spend
+const [cardData,setCardData]=useState({});
+
+
+
+// ---------- LOAD DASHBOARD ----------
 useEffect(()=>{
-  fetchData();
+ loadDashboard();
+ loadCards();
 },[]);
 
-const fetchData=async()=>{
-  const snap=await getDocs(collection(db,"transactions"));
-  setTransactions(snap.docs.map(d=>d.data()));
+
+
+// ---------- LOAD MONTHLY + CATEGORY DATA ----------
+const loadDashboard = async()=>{
+
+ const now=new Date();
+
+ const monthKey=
+   now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+
+
+ // MONTHLY SPEND
+ const monthlyRef=doc(db,"monthlySummary",monthKey);
+ const monthlySnap=await getDoc(monthlyRef);
+
+ if(monthlySnap.exists()){
+  setMonthlySpend(monthlySnap.data().totalSpend || 0);
+ }
+
+
+
+ // CATEGORY SUMMARY
+ const catRef=doc(db,"categorySummary",monthKey);
+ const catSnap=await getDoc(catRef);
+
+ if(catSnap.exists()){
+  setCategoryData(catSnap.data());
+ }
+
 };
 
-// ---------- FILTER ----------
 
-const filtered=transactions.filter(t=>{
-  if(!fromDate||!toDate) return true;
 
-  const d=new Date(t.createdAt?.seconds*1000);
-  return d>=new Date(fromDate)&&d<=new Date(toDate);
-});
+// ---------- LOAD CREDIT CARDS ----------
+const loadCards = async()=>{
 
-// ---------- TOTAL ----------
+ const snap = await getDocs(collection(db,"cardSummary"));
 
-const total=filtered.reduce((s,t)=>s+Number(t.amount||0),0);
+ const data = {};
 
-// ---------- CATEGORY ----------
+ snap.docs.forEach(doc=>{
+  data[doc.id] = doc.data().currentCycleSpend || 0;
+ });
 
-const catAgg={};
-filtered.forEach(t=>{
-  const c=t.category||"Others";
-  catAgg[c]=(catAgg[c]||0)+Number(t.amount||0);
-});
+ setCardData(data);
 
-// ---------- CREDIT CARD BILLING ----------
+};
 
-const cardAgg={};
 
-filtered.forEach(t=>{
-  if(t.transactionType==="Credit Card"){
-    const card=t.cardName||"Unknown";
 
-    const txnDate=new Date(t.createdAt?.seconds*1000);
-    const billStart=billingCycles[card]||1;
-
-    if(txnDate.getDate()>=billStart){
-      cardAgg[card]=(cardAgg[card]||0)+Number(t.amount||0);
-    }
-  }
-});
-
-// ---------- CHART ----------
-
+// ---------- CATEGORY CHART ----------
 const chartData={
-  labels:Object.keys(catAgg),
-  datasets:[
-    {label:"Category Spend",data:Object.values(catAgg)}
-  ]
+ labels:Object.keys(categoryData),
+ datasets:[
+  {
+   label:"Category Spend",
+   data:Object.values(categoryData),
+   backgroundColor:"#38bdf8"
+  }
+ ]
 };
 
+
+
+// ---------- UI ----------
 return(
+
 <div style={{padding:20}}>
 
 <h2>Dashboard</h2>
 
-{/* DATE FILTER */}
-<label>From:</label>
-<input type="date" onChange={e=>setFromDate(e.target.value)}/>
 
-<label> To:</label>
-<input type="date" onChange={e=>setToDate(e.target.value)}/>
 
-<hr/>
+{/* MONTHLY SPEND CARD */}
 
-<h1>₹{total.toLocaleString()}</h1>
-<p>Total Spend</p>
+<div style={{
+ background:"#ffffff",
+ padding:20,
+ borderRadius:12,
+ marginBottom:20,
+ boxShadow:"0 3px 10px rgba(0,0,0,0.08)"
+}}>
 
-<hr/>
+<h3>This Month Spend</h3>
 
-<h3>Category Spend</h3>
-<Bar data={chartData}/>
-
-<hr/>
-
-<h3>Credit Card (Current Cycle)</h3>
-
-{Object.entries(cardAgg).map(([card,val])=>(
-  <p key={card}>
-    <b>{card}</b>: ₹{val.toLocaleString()}
-  </p>
-))}
+<h1>₹{monthlySpend.toLocaleString()}</h1>
 
 </div>
+
+
+
+{/* CATEGORY CHART */}
+
+<div style={{
+ background:"#ffffff",
+ padding:20,
+ borderRadius:12,
+ marginBottom:20
+}}>
+
+<h3>Category Spend</h3>
+
+{Object.keys(categoryData).length>0 ? (
+ <Bar data={chartData}/>
+) : (
+ <p>No category data yet</p>
+)}
+
+</div>
+
+
+
+{/* CREDIT CARD SUMMARY */}
+
+<div style={{
+ background:"#ffffff",
+ padding:20,
+ borderRadius:12
+}}>
+
+<h3>Credit Card Current Cycle</h3>
+
+{Object.keys(cardData).length>0 ? (
+
+ Object.entries(cardData).map(([card,val])=>(
+  <p key={card}>
+   <b>{card}</b>: ₹{val.toLocaleString()}
+  </p>
+ ))
+
+) : (
+
+ <p>No credit card transactions yet</p>
+
+)}
+
+</div>
+
+</div>
+
 );
 }
